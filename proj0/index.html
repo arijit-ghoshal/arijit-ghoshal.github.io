@@ -1,15 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Project 0: Becoming Friends with Your Camera</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project 0: Becoming Friends with Your Camera</title>
+
+  <!-- Include Boostrap, jQuery, JavaScript -->
+  <!-- Using Bootstrap 3 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  
+  <style>
+    body {
+      font-family: Montserrat, serif;
+      margin: 20px;
+      padding-top: 50px;
+      background-color: #e7f6ec;
+    }
+    .grid-image {
+      height: 300px;
+      width: 100%;
+      object-fit: cover;
+    }
+    .grid-image-wide {
+      height: 200px;
+      object-fit: contain;
+    }
+  </style>
 </head>
 <body>
-    <h1>Welcome to My CS180 Portfolio!</h1>
+  <div class="container text-center">
+    <h1>Project 0: Becoming Friends with Your Camera</h1>
+  </div>
+  
+  <div class="container text-center">
+    <h2>Part 1: Selfie: The Wrong Way vs. The Right Way</h2>
+    <p>Here's a selection of photos from across Berkeley and Oakland. <br> </p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_polo_1.jpg" class="img-responsive img-thumbnail grid-image" alt="Selfie 1">
+        <p> Image 1 - Living Room</p>
+      </div>
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_maroon.jpg" class="img-responsive img-thumbnail grid-image" alt="Selfie 2">
+        <p> Image 2 - Shattuck Avenue </p>
+      </div>
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_bike.jpg" class="img-responsive img-thumbnail grid-image" alt="Selfie 3">
+        <p> Image 3 - Lake Merrit </p>
+      </div>
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_flag.jpg" class="img-responsive img-thumbnail grid-image" alt="Selfie 4">
+        <p> Image 4 - My Room </p>
+      </div>
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_out.jpg" class="img-responsive img-thumbnail grid-image" alt="Selfie 5">
+        <p> Image 5 - Vine Street </p>
+      </div>
+    </div>
+
+    <p>Here's a sequence of images with a consistent background.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_polo_1.jpg" class="img-responsive img-thumbnail grid-image" alt="Photo 1">
+      </div>
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_polo_2.jpg" class="img-responsive img-thumbnail grid-image" alt="Photo 2">
+      </div>
+      <div class="col-xs-6 col-sm-4 col-md-2">
+        <img src="img_polo_3.jpg" class="img-responsive img-thumbnail grid-image" alt="Photo 3">
+      </div>
+    </div>
+  </div>
+  
+  <div class="container text-center"> <!--container-fluid-->
+    <h2>Part 2: Architectural Perspective Compression</h2>
+    <p>Here's three photos of the Berkeley Veteran Memorial Hall on MLK and Center, taken from the park across the street.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="building_1.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="building_3.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="building_5.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+      </div>
+    </div>
+  </div>
+  
+  <div class="container text-center"> <!--container-fluid-->
+    <h2>Part 3: The Dolly Zoom</h2>
+    <p>The Dolly Zoom, featuring the Blåhaj from IKEA, Blobfish, Piggle, and Teachy. </p>            
+    <img src="dolly.gif" class="img-rounded" alt="Cinque Terre" width="480" height="270"> 
+  </div>
 </body>
+
+<footer class="text-center" style="margin-top: 50px; padding: 20px; background: #eee;">
+  <small>Arijit Ghoshal - Project 0</small>
+</footer>
 </html>
