@@ -34,8 +34,8 @@
   </div>
 
   <div class="container text-center">
-    <h2>Single-Scale</h2>
-    <p>I used .</p>
+    <h2>Single-Scale Alignment for Low-Resolution Images</h2>
+    <p>Here are the three JPG files which used single-scale alignment. I aligned both the red and green channels to the blue channel. For the red/green channels, I performed an exhaustive search over a reasonable range of shifts. For each shift, I aggressively cropped both the red/green and blue channels, retaining only the middle 80% in both dimensions, and calculated the Normalized Cross Correlation metric. The best shift was the one which maximized the correlation. </p>
     <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="output_images/cathedral.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
@@ -51,8 +51,8 @@
 
   
   <div class="container text-center">
-    <h2>Multi-Scale</h2>
-    <p>I used .</p>
+    <h2>Multi-Scale Pyramid Alignment for High-Resolution Images</h2>
+    <p>Here are the reamining eleven TIF images. I created an image pyramid scheme that began with a low resolution (256x256 pixels) and then iteratively updated the best shift by repeatedly upscaling the image by a factor of 2. I chose a reasonable initial shift range (25 pixels in each direction), and successive calls to the exhaustive align function required only 5 shifts in each direction. Notably, the emir image does not perform as well using the NCC metric.</p>
     <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="output_images/church.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
