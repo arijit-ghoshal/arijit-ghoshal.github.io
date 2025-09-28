@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project 2: Fun with Filters and Frequencies!</title>
+
+  <!-- Include Boostrap, jQuery, JavaScript -->
+  <!-- Using Bootstrap 3 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+  <!-- For embedding python code -->
+  <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
+  
+  <style>
+    body {
+      font-family: Montserrat, serif;
+      margin: 20px;
+      padding-top: 50px;
+      background-color: #e7c9e7;
+    }
+    .grid-image {
+      height: 300px;
+      width: 100%;
+      object-fit: cover;
+    }
+    .grid-image-wide {
+      height: 200px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <h1>Project 2: Fun with Filters and Frequencies!</h1>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 1.1: Convolutions from Scratch!</h2>
+    Here's a photo of myself in the Mount Hood National Rainforest, rendered in grayscale.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_1/original.png" class="img-responsive img-thumbnail grid-image-wide"> 
+      </div>
+    </div>
+    <p>Here's the photo, convolved with a 9x9 box filter and the finite difference filters DX and DY. Note that all three convolution methods (four loops, two loops, and scipy) yielded the same results. These are the results from the two loop version. Additionally, to properly visualize the derivative images, I normalized their values to be within the range [0, 1], so a derivative of zero corresponds to gray.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_1/box.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>9x9 Box Filter</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_1/dx.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>DX Filter</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_1/dy.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>DY Filter</p>
+      </div>
+    </div>
+
+    <p>Below is the code I wrote to implement convolution with four loops and with two loops. In general, there are three ways to handle boundaries: no padding, which decreases the size of the output ("valid"), just enough padding to maintain the output size ("same"), or enough padding to allow the kernel to slide over all possible positions over the image ("full"). I implemented "same" padding, which pads the image with k_size // 2 zeros on all sides. This likely doesn't perform as well as symmetric padding, as the pixels near the borders will get dimmed.</p>
+      
+    <p>I used IPython's %timeit to time each convolution method. I tested each method with the 9x9 box filter on the above selfie (which is a 960 x 540 image). Four loops was the slowest, taking 49.7 (±5.49) seconds per iteration; two loops took 5.61 (±0.312) seconds per iteration; and SciPy's convolution took 139 (±13.1) ms per iteration. The two-loop method was surprisingly slow, even for a moderately-high resolution image.</p>
+    <pre>
+      <code class="language-python">
+        def convolve_loops(image : ndarray, kernel : ndarray, loops : int = 2):
+          # Copy the image and flip the kernel.
+          image = image.copy()
+          kernel = kernel[::-1, ::-1]
+          kh, kw = kernel.shape
+
+          # Pad the image.
+          pad_h, pad_w = kh // 2, kw // 2
+          image = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w)), mode='constant')
+
+          # Create the convolved image.
+          convolved = np.zeros(image.shape)
+          ch, cw = convolved.shape
+
+          if loops == 4:
+              for cy in range(ch):
+                  for cx in range(cw):
+                      for ky in range(kh):
+                          for kx in range(kw):
+                              convolved[cy, cx] += kernel[ky, kx] * image[cy + ky, cx + kx]
+          elif loops == 2:
+              for cy in range(ch):
+                  for cx in range(cw):
+                      convolved[cy, cx] += np.sum(kernel * image[cy : cy + kh, cx : cx + kw])
+
+          return convolved
+      </code>
+    </pre>
+    
+  
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 1.2: Finite Difference Operator</h2>
+    <p>Here's the original cameraman image, loaded in grayscale.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_2/cameraman.png" class="img-responsive img-thumbnail grid-image-wide"> 
+      </div>
+    </div>
+    <p>Here's the result of applying the finite difference operators DX and DY to the image. Notice that the DX filter captures changes in the x-direction, while the DY filter captures changes in the y-direction. Additionally, I calculated the magnitude of the gradient and set a threshold of 0.27 to detect edges. I picked this threshold experimentally. It's high enough to reduce background noise, but low enough to capture nearly all of the edges of the man and the camera.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_2/gradient.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Magnitude of Gradient (T=0.27)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_2/dx.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>DX Filter</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_2/dy.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>DY Filter</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="container text-center">
+    <h2>Part 1.3: Derivative of Gaussian Filter</h2>
+    <p>Here are the Gaussian and Derivative-of-Gaussian filters. I used a standard deviation of sigma = 2.0 and a kernel size of 13 x 13. This resulted in better edge detection than Part 1.2.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/gaussian_filter.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Gaussian Filter</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/dog_x_filter.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Derivative-of-Gaussian-x Filter.</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/dog_y_filter.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Derivative-of-Gaussian-y Filter.</p>
+      </div>
+    </div>
+
+    <p>Here's the result of applying these filters to the cameraman image.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/gaussian_cameraman.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Gaussian Filter</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/dog_x_cameraman.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Derivative-of-Gaussian-x Filter.</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/dog_y_cameraman.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Derivative-of-Gaussian-y Filter.</p>
+      </div>
+    </div>
+    
+    <p>Here's the magnitude of the DoG_X and DoG_Y outputs together, using a threshold of 0.14. Notably, this is able to capture the same edges as the Finite-Difference filters, but has a lot less noise in between. This is likely because the Gaussian acts as a low-pass filter, so a lot of the high-frequency noise is blocked out, but because sharp edges contain frequencies from across the spectrum, they are still present here.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_3/gradient.png" class="img-responsive img-thumbnail grid-image-wide"> 
+        <p>Magnitude of Gradient (T=0.14)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 2.1: Image "Sharpening"</h2>
+    <p>I created an "unsharp" filter that combines the low frequencies of an image (obtained from a Gaussian filter) with its high frequencies (subtracting the low pass from the original), scaled up to become more prominent. We can express this sharpened image as image + α(image - g * image), where α > 0; the filter can then be written as k = (1 + α)e - α(g), where e is the unit impulse (the identity filter).</p>
+    <p>Here's the result of sharpening the Taj Mahal Image. I used a sigma value of 4.0 for the Gaussian blur and an alpha value of 2.0 (so the number of high frequencies was tripled). Note that I normalized the high frequencies to be in the range [0, 1] for visualization.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/taj_original.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Original Image</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/taj_blurred.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Blurred Image (Sigma = 4.0)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/taj_high_frequencies.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>High Frequencies (Normalized)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/taj_sharpened.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Sharpened Image (Alpha = 2.0)</p>
+      </div>
+    </div>
+    <p>Here's the result of me blurring, then re-sharpening a photo of the Campanile I took. For consistency, I blurred and then re-sharpened with the same sigma value of 4.0. Notice that it's able to get some of the detail back. </p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/camp_original.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Original Image (Campanile)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/camp_blurred.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Blurred Image (Sigma = 4.0)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_1/camp_sharpened.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Re-Sharpened Image (Sigma = 4.0, Alpha = 2.0)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 2.2: Hybrid Images</h2>
+    <p>I used the provided alignment code to align the images, then applied a low-pass filter (a Gaussian kernel) to one image and a high-pass filter (a Laplacian-of-Gaussian kernel) to the other. The sigma-values for each kernel were chosen via experimentation. I scaled the high-frequency image by a factor alpha to make it more visible, then added it to the low-frequency image.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Derek and Nutmeg</p>
+        <img src="images/p2_2/derek_nutmeg.png" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Lion and Tiger</p>
+        <img src="images/p2_2/lion_tiger.png" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Compass and Clock</p>
+        <img src="images/p2_2/clock_compass.png" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+    </div>
+    <p>Here's a closer look at the process for the Lion and Tiger example. Here's the original images:</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Lion (used for low frequencies)</p>
+        <img src="images/p2_2/lion.jpg" class="img-responsive" width="480" height="270">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Tiger (used for high frequencies)</p>
+        <img src="images/p2_2/tiger.jpg" class="img-responsive" width="480" height="270">
+      </div>
+    </div>
+    <p>Here's the FFT of each aligned image (before any sort of filtering). The diagonal line in the Lion FFT is due to the fact that its image was rotated slightly during alignment.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Lion FFT</p>
+        <img src="images/p2_2/lion_fft.png" class="img-responsive" width="480" height="270">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Tiger FFT</p>
+        <img src="images/p2_2/tiger_fft.png" class="img-responsive" width="480" height="270">
+      </div>
+    </div>
+    <p>Here's the FFT of each image post-filtering. Notice that for the lion, which had the low pass filter applied, most of the frequencies away from the origin are gone. While there are still some high frequencies along the axes, they are diminished. For the tiger, which had the high-pass filter, the contrast is low due to how few high frequencies there were, but we can see that there are fewer frequencies near the origin.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Low-passed Lion FFT</p>
+        <img src="images/p2_2/lion_low_fft.png" class="img-responsive" width="480" height="270">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>High-passed Tiger FFT</p>
+        <img src="images/p2_2/tiger_high_fft.png" class="img-responsive" width="480" height="270">
+      </div>
+    </div>
+    <p>Here's the FFT of the aligned image, along with the aligned image for reference..</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Hybrid FFT</p>
+        <img src="images/p2_2/hybrid_fft.png" class="img-responsive" width="480" height="270">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Hybrid Image</p>
+        <img src="images/p2_2/lion_tiger.png" class="img-responsive" width="480" height="270">
+      </div>
+    </div>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 2.3: Gaussian and Laplacian Stacks</h2>
+    <p>I implemented a function to create Gaussian and Laplacian stacks for a given image. Recall that a Gaussian pyramid is created by beginning with the original image, then repeatedly applying a Gaussian filter (to remove high frequencies) and downsampling the image. The Gaussian stack is similar, but no downsampling is performed. The Laplacian stack is then created by subtracting successive images from the Gaussian stack to capture the high-frequencies that are removed at each step. Below, I've displayed the Gaussian and Laplacian stacks for the apple and orange, as well as the Gaussian stack for the mask. Note that the Laplacian stack images were normalized before display.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Gaussian Stack for Apple, Orange, and Mask. </p>
+        <img src="images/p2_3/gaussian.png" class="img-responsive" width="480" height="270">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Laplacian Stack for Apple and Orange.</p>
+        <img src="images/p2_3/laplacian.png" class="img-responsive" width="480" height="270">
+      </div>
+    </div>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 2.4: Multiresolution Blending</h2>
+    <p>For multiresolution blending, I used the Laplacian Stacks from part 2.3 for the two images and the Gaussian stack for the mask. Then, for each layer of the stacks, I combined the images, weighting image1 by mask1 and image2 by 1-mask1.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>The Orapple, using a vertical seam. </p>
+        <img src="images/p2_4/apple_orange.png" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>My face on the wall of a building on campus, using an elliptical filter. </p>
+        <img src="images/p2_4/wall.png" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <p>Me and my friend</p>
+        <img src="images/p2_4/me_shawn.png" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+  </div>
+  
+<footer class="text-center" style="margin-top: 50px; padding: 20px; background: #eee;">
+  <small>Arijit Ghoshal - Project 2</small>
+</footer>
+</html>
