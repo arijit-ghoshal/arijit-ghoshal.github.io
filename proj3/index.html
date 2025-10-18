@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script type="text/javascript" async
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
   
   <style>
     body {
@@ -33,64 +36,297 @@
   <div class="container text-center">
     <h1>Project 3: [Auto]Stitching Photo Mosaics</h1>
   </div>
+
+  <div class="container text-center">
+    <h2>Part A.1: Shoot the Pictures</h2>
+    <p>Here's three pairs of photos I shot from around the bay. I'll show the manually-selected point correspondences in the next section.</p>
+    <p>View from a hill in SF.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/left.jpg" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/right.jpg" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+    </div>
+    <p>A staircase in Main Stacks.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/stacks/left.jpg" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/stacks/right.jpg" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+    </div>
+    <p>View from a hiking trail overlooking Lexington Reservoir.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/left.jpg" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/right.jpg" class="img-responsive img-thumbnail grid-image-wide">
+      </div>
+    </div>
+  </div>
   
   <div class="container text-center">
     <h2>Part A.2: Recover Homographies</h2>
-    <p>Here's a collection of manually-chosen correspondences for two photos from a viewpoint in SF.  </p>
-    <img src="images/correspondences.png" class="img-rounded"> 
+    In order to calculate the homography matrix \(H\) that relates two images, I set up the linear system of equations \(Ah = b\). Let \((x_{i,1}, y_{i,1})\) be a point in the first image and \((x_{i,2}, y_{i,2})\) be the corresponding point in the second image. Then \(A\) is a \(2N \times 8\) matrix, where each \(2 \times 8\) block is given by:
+    \[
+      \begin{bmatrix}
+        x_{i,1} & y_{i,1} & 1 & 0 & 0 & 0 & -x_{i,2} x_{i,1} & -x_{i,2} y_{i,1} \\
+        0 & 0 & 0 & x_{i,1} & y_{i,1} & 1 & -y_{i,2} x_{i,1} & -y_{i,2} y_{i,1}
+      \end{bmatrix}.
+    \]
+    Additionally, \(b\) is a length-\(2N\) vector consisting of the x and y coordinates of the destination points stacked on top of each other, given by
+    \[
+      \begin{bmatrix}
+        x_{1,2} \\ y_{1,2} \\ \dots \\ x_{n,2} \\ y_{n,2}
+      \end{bmatrix}.
+    \]
+    Finally, \(h\) is an \(8\) element vector that contains the first \(8\) elements of the homography matrix \(H\). The last element is simply set to \(1.0\).
+    This works because, for each \(i\), the system is simply
+    \[
+      \begin{bmatrix}
+        x_{i,1} & y_{i,1} & 1 & 0 & 0 & 0 & -x_{i,2} x_{i,1} & -x_{i,2} y_{i,1} \\
+        0 & 0 & 0 & x_{i,1} & y_{i,1} & 1 & -y_{i,2} x_{i,1} & -y_{i,2} y_{i,1}
+      \end{bmatrix}
+      \begin{bmatrix}
+          a \\ b \\ c \\ d \\ e \\ f \\ g \\ h
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        x_{1,2} \\ y_{1,2}
+      \end{bmatrix}
+    \]
+    which is equivalent to the system
+    \[
     
-    In order to calculate the homography matrix H, I set up the matrix equation Ah = b, where A is a 2N x 8 matrix and b is a length-2N vector consisting of the x and y coordinates of the destation points. Each 2x8 block of A consists of the rows [x, y, 1, 0, 0, 0, -xp*x, -xp*y] and [0, 0, 0, x, y, 1, -yp*x, -yp*y] (will LaTeX up in final draft). The computed homography matrix for this example was [[ 5.15e-01, -8.44e-02,  3.95e+02], [-7.73e-02,  8.25e-01,  5.30e+01], [-4.99e-04, -2.67e-05,  1.00e+00]].
+      \begin{bmatrix}
+           a & b & c \\ d & e & f \\ g & h & 1
+      \end{bmatrix}
+      \begin{bmatrix}
+          x_{i,1} \\ y_{i,1} \\ 1
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+          x_{i,2} \\ y_{i,2} \\ \lambda
+      \end{bmatrix}
 
+    \]
+    I then used least-squares to solve this system, and reshaped it.
+
+
+    <p>For each pair of images, here's the manually-picked point correspondences and the associated homography matrix.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/sf/correspondence.png" class="img-roundeds"> 
+      \[
+        H_{SF} = \begin{bmatrix}
+          0.515 & -0.084 & 395.212 \\ -0.077 & 0.825 & 53.028 \\ 0.000 & 0.000 & 1
+        \end{bmatrix}
+      \]
+    </div>
+    
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/stacks/correspondence.png" class="img-roundeds"> 
+      \[
+        H_{Stacks} = \begin{bmatrix}
+        0.257 & 0.003 & 617.025 \\
+        -0.244 & 0.851 & 66.629 \\
+        0.000 & 0.000 & 1
+        \end{bmatrix}
+      \]
+    </div>
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/hike/correspondence.png" class="img-roundeds"> 
+      \[
+        H_{Hike} = \begin{bmatrix}
+        0.388 & 0.001 & 513.757 \\
+        -0.162 & 0.864 & 23.777 \\
+        0.000 & 0.000 & 1
+        \end{bmatrix}
+      \]
+    </div>
+    
   </div>
   
   <div class="container text-center"> <!--container-fluid-->
     <h2>Part A.3: Warp the Images</h2>
-    (Didn't have time for my explanation yet. Nearest Neighbors was noticeably faster.)
-    <p>Here's Nearest Neighbors and Bilinear interpolation for a photo from Cheeseboard.</p>
+    In order to warp the images, I first calculated where the four corners of the image would map to under the homography and used this information to calculate the height and width of the output image (the difference of the maximum and minimum coordinates of the warped corners). Then, I calculated the inverse transformation of the homography (adding in a translation to account for the fact that the origin of the new image is slightly displaced from the top-left warped corner). For every pixel in the output image, I found its preimage under the homography. If it landed within the bounds of the image, I either rounded it (Nearest Neighbors) or performed a linear combination of its neighbors (Bilinear). I also added an alpha channel to the output which was 1 for the valid pixels of the output.
+    <p>A sign at the Cheeseboard pizza kitchen.</p>
     <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="images/cheeseboard.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>Original Image</p>
       </div>
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="images/cheeseboard_nn.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>Nearest Neighbors interpolation</p>
       </div>
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="images/cheeseboard_bi.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>Bilinear interpolation</p>
       </div>
     </div>
 
-    <p>Here's Nearest Neighbors and Bilinear interpolation for a photo from my kitchen.</p>
+    <p>A microwave from my kitchen.</p>
     <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="images/microwave.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>Original Image</p>
       </div>
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="images/microwave_nn.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>Nearest Neighbors interpolation</p>
       </div>
       <div class="col-xs-12 col-sm-6 col-md-4">
         <img src="images/microwave_bi.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>Bilinear interpolation</p>
       </div>
     </div>
   </div>
   
   <div class="container text-center"> <!--container-fluid-->
     <h2>Part A.4: Blend the Images into a Mosaic</h2>
-    <p>Here's the two unwarped photos.</p>
+    This part mostly consisted of putting everything together. I computed the homography that would send the points manually chosen from the second image to those in the first image. Then, similarly to A.3, I computed the size of the output image by mapping the corners of the input images and subtracting the minimum and maximum coordinates. After warping the second image, I simply composed both images onto the canvas. I also used alpha blending, explained below.
+    <p>For each example, I'll show the two raw images and the resulting panorama mosaic.</p>
     <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
       <div class="col-xs-12 col-sm-6 col-md-4">
-        <img src="images/left.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <img src="images/sf/left.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Left image
       </div>
       <div class="col-xs-12 col-sm-6 col-md-4">
-        <img src="images/right.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <img src="images/sf/right.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Right image
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/sf.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Composed image
       </div>
     </div>
-    I was able to warp the second image to fit the correspondences, but ran out of time recombining them into one mosaic. Here's what I have so far. I plan to use an alpha mask based on bw distance to combine them.
     <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
       <div class="col-xs-12 col-sm-6 col-md-4">
-        <img src="images/mosaic_left_w.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <img src="images/stacks/left.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Left image
       </div>
       <div class="col-xs-12 col-sm-6 col-md-4">
-        <img src="images/mosaic_warped_r.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <img src="images/stacks/right.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Right image
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/stacks/stacks.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Composed image
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/left.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Left image
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/right.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Right image
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/hike.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Composed image
+      </div>
+    </div>
+    Here's a visualization of how the blending improved the results. When composing the two images, I used alpha channels with values near 1 near the center of the image and values near 0 near the edges. The alpha channel for the second image was warped, and then in the overlap portion, the images were weighted proportional to their alpha value.
+    Here's how the alpha channels looked.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/alpha_mask.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+      </div>
+    </div>
+
+    Here's a comparison of the composition without and with the alpha blending on the SF image. Notice that the version without blending has some edge artifacts.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/sf_without_blending.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Without alpha blending
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/sf.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        With alpha blending
+      </div>
+    </div>
+  </div>
+
+  <div class="container text-center"> <!--container-fluid-->
+    <h2>Part B.1: Harris Corner Detection (with ANMS)</h2>
+    I used the provided code for Harris Corner Detection. However, since Harris Corner Detection provides way too many points of interest, I used ANMS (Adaptive Non-Maximal Suppression) to choose 500 points evenly distributed throughout the image. I used a vectorized approach. For each point of interest, I calculated the minimum suppression radius, which is the minimum radius such that the point's H-value is not sufficiently smaller than all other H-values in that circle. I experimentally found a value of \(0.9\) to work well. To do this, I computed an \(N \times N\) distance matrix of all pairwise distances, then masked using the condition and calculated the minimum distance value for each point. Finally, I returned the coordinates points with the highest radii. I had to make a point to reverse the coordinates outputted by the Harris detector.
+    <p>Here's the detected corners without and with ANMS on the left picture from SF.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/harris.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>Without ANMS</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/anms.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>With ANMS (200 points)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container text-center"> <!--container-fluid-->
+    <h2>Part B.2: Feature Descriptor Extraction</h2>
+    For each keypoint identified in B.1, I extracted a \(40 \times 40\) patch around it and then downsampled to \(8 \times 8\) with bilinear interpolation. I then performed bias/gain normalization for each patch, where I subtracted out the mean and divided by the standard deviation so the patch would have mean \(0\) and standard deviation \(1\). Finally, I flattened each patch into a length-\(64\) feature vector, although for visualization purposes I skipped the flattening below.
+    <p>Here's the first five features from the first image.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/image_1_features.png" class="img-roundeds">
+    </div>
+    Here's the first five features from the second image.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/image_2_features.png" class="img-roundeds">
+    </div>
+  </div>
+
+  <div class="container text-center"> <!--container-fluid-->
+    <h2>Part B.3: Feature Matching</h2>
+    For each feature computed for the first image in B.2, I extracted the two features in the second image with the lowest L2 differences. I used a vectorized approach that involved a distance matrix. In order to be robust to outliers, I applied Lowe's Ratio test, in which features are only considered valid if their L2 errors from the best match are sufficiently smaller than their L2 errors from the second-best match. I experimentally determined \(0.4\) to work.
+    <p>Here's the first five features from the first image (that have a valid match, after culling with Lowe's Ratio test), and the corresponding features from the second image. Notice that the features are very similiar, except for a visible skew in the 2nd and 5th images.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/m_1_features.png" class="img-roundeds">
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <img src="images/m_2_features.png" class="img-roundeds">
+    </div>
+  </div>
+
+  <div class="container text-center"> <!--container-fluid-->
+    <h2>Part B.4: RANSAC for Robust Homography</h2>
+    In order to remove any outlier feature matches from B.3, I implemented RANSAC. This method performs the following steps in a loop: it selects four keypoint pairs at random, calculates the exact homography matrix between them, and determines how many other keypoint pairs agree with this homography. I checked this last step by computing the reprojection error and checking if it was below a threshold of \(3\). I ran this for \(100\) iterations, keeping the configuration that resulted in the most "inliers", and returned those inliers.
+    <p>Here's the final fully-automatic mosaics for the three examples, compared with the result with handpicked points. Notice that there is a slight difference between the two, due to small differences in the homography matrix.</p>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/sf.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Manual correspondences
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/sf/sf_auto.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Automatic correspondences
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/stacks/stacks.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Manual correspondences
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/stacks/stacks_auto.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Automatic correspondences
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/hike.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        Manual correspondences
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/hike/hike_auto.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        Automatic correspondences
       </div>
     </div>
   </div>
