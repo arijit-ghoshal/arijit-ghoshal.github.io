@@ -96,12 +96,11 @@
       \end{bmatrix}
       =
       \begin{bmatrix}
-        x_{1,2} \\ y_{1,2}
-      \end{bmatrix}
+        x_{i,2} \\ y_{i,2}
+      \end{bmatrix},
     \]
     which is equivalent to the system
     \[
-    
       \begin{bmatrix}
            a & b & c \\ d & e & f \\ g & h & 1
       \end{bmatrix}
@@ -110,9 +109,8 @@
       \end{bmatrix}
       =
       \begin{bmatrix}
-          x_{i,2} \\ y_{i,2} \\ \lambda
-      \end{bmatrix}
-
+          x_{i,2} \\ y_{i,2} \\ 1
+      \end{bmatrix}.
     \]
     I then used least-squares to solve this system, and reshaped it.
 
