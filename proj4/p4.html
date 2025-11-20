@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project 4: Neural Radiance Field!</title>
+
+  <!-- Include Boostrap, jQuery, JavaScript -->
+  <!-- Using Bootstrap 3 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+  
+  <style>
+    body {
+      font-family: Montserrat, serif;
+      margin: 20px;
+      padding-top: 50px;
+      background-color: #e7e8ff;
+    }
+    .grid-image {
+      height: 300px;
+      width: 100%;
+      object-fit: cover;
+    }
+    .grid-image-wide {
+      height: 200px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <h1>Project 4: Neural Radiance Field!</h1>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 0: Calibrating Your Camera and Capturing a 3D Scan</h2>
+
+    <h3>Part 0.1: Calibrating Your Camera</h3>
+    I took 40 photos of the ArUco calibration tags.
+    I used my phone camera so there wouldn't be any distortion due to the lens.
+    I took the photos from many angles and distances, but kept the zoom level consistent.
+    I downsized the photos to a reasonable resolution.
+    Here's one example of a photo:
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/tag.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>An example ArUco tag photo</p>
+      </div>
+    </div>
+
+    I detected the ArUco tags in each image using OpenCV's ArUco detector.
+    From the detection, I matched all detected corners with their 3D world coordinates.
+    I used OpenCV's calibrateCamera to compute the camera's intrinsics and distortion coefficients.
+    There were a few images which had no detected tags, so I excluded them from the dataset.
+
+    <h3>Part 0.2: Capturing a 3D Object Scan</h3>
+    I took 40 photos of my object next to one ArUco tag from various angles, making sure the tag could be seen in each one.
+    I used the same settings as the calibration, and downsized them to the same resolution.
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/obj.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>An example object photo</p>
+      </div>
+    </div>
+    <h3>Part 0.3: Estimating Camera Pose</h3>
+    For each image, I estimated the camera's pose, which is the position and orientation, using the intrinsics and distortion coefficients calculated in Part 0.1.
+    This was done by detecting the ArUco tag like before, then using OpenCV's solvePNP.
+    I passed in the 2D pixel coordinates of all detected corners, their 3D coordinates, and the camera information from before.
+    Note that solvePNP returned the w2c (world to camera) transformation, so I had to invert this to obtani the c2w (camera to world) transformation.
+    I used Viser to visualize the camera poses. Below is a view of the visualization; the frustums represent the cameras, showing their positions, view directions, and the images they saw.
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/vis.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>Viser Visualization</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="container text-center">
+    <h2>Part 1: Fit a Neural Field to a 2D Image</h2>
+    
+    I implemented the MLP that was provided in the project specification.
+    This model takes in two inputs \(x, y\) representing the pixel value (normalized to be less than one) and outputs the RGB value at that point.
+    I used sinusoidal positional encoding to increase the number of inputs to \(4L + 2\), where \(L\) is the number of frequencies used for the encoding.
+    I computed the MSE loss between these predicted colors and true colors and used Adam to help update parameters (with a learning rate of \(0.01\)).
+
+    My best model had \(L = 12\) and a hidden layer dimension of \(256\), and ran for \(2000\) iterations.
+
+
+    Here are the final results of both images, compared to the original images.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/reconstruction_2000.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>Fox Image Reconstruction</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/cs180_proj4_fox.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>Fox Image Original</p>
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/view_2000.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>View Image Reconstruction</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/cs180_proj4_view.jpg" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>View Image Original</p>
+      </div>
+    </div>
+
+    Below are the graphs of PSNR (Peak Signal-to-Noise Ratio) for the best models I trained. Recall that a higher PSNR corresponds to a better reconstruction.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/fox_psnr.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>Fox Image PSNR</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/view_psnr.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>View Image PSNR</p>
+      </div>
+    </div>
+
+
+    For the best model I trained for the fox image, here's a series of reconstructions of the image throughout the model's training. These results are at iterations 100, 200, 500, and 1000 for both the fox image and my personal image.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/reconstruction_100.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>100 iterations</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/reconstruction_200.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>200 iterations</p>
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/reconstruction_500.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>500 iterations</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/reconstruction_1000.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>1000 iterations</p>
+      </div>
+    </div>
+    Here's the same for the view image.
+    
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/view_100.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>100 iterations</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/view_200.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>200 iterations</p>
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/view_500.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>500 iterations</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/view_1000.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>1000 iterations</p>
+      </div>
+    </div>
+
+    Finally, here are the results of hyperparameter tuning for the fox image. I've displayed four models with all combinations \(L = 2, 12\) and \(D = 32, 256\), where \(D\) is the size of the hidden layer. These were all trained for 2000 iterations.
+    Notice that a higher \(L\) allows the model to capture higher frequencies, and increasing the hidden layer size improved the details.
+    
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/fox_2_32.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>\(L = 2, D = 32\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/fox_2_256.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>\(L = 2, D = 256\)</p>
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/fox_12_32.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 1">
+        <p>\(L = 12, D = 32\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/reconstruction_2000.png" class="img-responsive img-thumbnail grid-image-wide" alt="Photo 3">
+        <p>\(L = 12, D = 256\)</p>
+      </div>
+    </div>
+
+  </div>
+  
+  <div class="container text-center">
+    <h2>Part 2: Fit a Neural Radiance Field from Multi-view Images</h2>
+    I was unable to finish part 2. I got certain parts working (specifically parts of 2.1, 2.2, and 2.5) but had persistent bugs that made me unable to finish the rest. Below is an explanation of what I tried.
+
+    <h3>Part 2.1: Create Rays from Cameras</h3>
+    I wrote a method to convert from camera to world coordinates, which converted coordinates to homogenous coordinates and multiplied them by a c2w matrix.
+    I wrote a method to convert from pixel to 3D space camera coordinates, which converted coordinates to homogenous coordinates and multiplied them by the inverse of the intrinsic matrix and the depth.
+    I wrote a method to convert a pixel coordinate into a ray in 3D space, which cast out a pixel coordinate to a camera coordinate with depth 1, then computed the origin and direction of the corresponding ray.
+    I used batched operations for all of these.
+    
+    <h3>Part 2.2: Sampling</h3>
+    I wrote code to generate a flattened coordinate grid of the image using Numpy's meshgrid and read the corresponding RGB color values (and camera numbers).
+    I wrote code to sample rays from the global pool of coordinates, using the previous pixel_to_ray method to obtain the corresponding rays.
+    I wrote code to sample random points along a given ray. For validation, these points would be sampled at uniform intervals from a specified near and far distance. For training, in order to prevent overfitting, I introduced random perturbations.
+
+    <h3>Part 2.4: Neural Radiance Field</h3>
+    The network architecture is similar to the one used in Part 1, but has a couple significant differences.
+    The input now takes in six values, instead of three: the 3D world coordinates \((x, y, z)\) and the 3D view direction \((d_x, d_y, d_z)\); but similarly to Part 1, these each input is encoded with sinusoidal positional encoding.
+    The output consists of four values: the pixel color \((R, G, B)\) and the density \(\sigma\).
+    As before, the pixel color is constrained to the interval \([0, 1]\) by a sigmoid activation, but density is constrained to a nonnegative value by a RELU activation.
+    Overall, the network is much deeper in order to handle the increased complexity.
+    Notably, most layers only have access to the world coordinates \((x, y, z)\), which travel through some dense layers, are re-concatenated at a middle layer, and ultimately decide the density output \(\sigma\).
+    The 3D view direction \((d_x, d_y, d_z)\) is only added to the network two layers prior to the prediction of the pixel color \((R, G, B)\); the viewing direction does not affect the density of a point.
+    Note that the network branches at the end, with the two branches predicting the density and color respectively.
+
+    <h3>Part 2.5: Volume Rendering</h3>
+    The volume rendering equation integrates the output density and pixel color from the NeRF along a given ray to produce the viewed pixel color.
+    This can be approximated using the discrete volume rendering function: \(\hat C(r) = \sum_i T_i (1 - \mathrm{exp}(-\sigma_i \delta_i))c_i\), where \(T_i = \prod_{j=1}^{i-1} \mathrm{exp}(- \sigma_j \delta_j)\) intuitively represents how much light the previous layers have let through.
+  </div>
+
+
+<footer class="text-center" style="margin-top: 50px; padding: 20px; background: #eee;">
+  <small>Arijit Ghoshal - Project 3</small>
+</footer>
+</html>
