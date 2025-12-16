@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project 5: Fun With Diffusion Models!</title>
+
+  <!-- Include Boostrap, jQuery, JavaScript -->
+  <!-- Using Bootstrap 3 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+  
+  <style>
+    body {
+      font-family: Montserrat, serif;
+      margin: 20px;
+      padding-top: 50px;
+      background-color: #ffe7fb;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .grid-image {
+      height: 300px;
+      width: 100%;
+      object-fit: cover;
+    }
+    .grid-image-wide {
+      height: 200px;
+      object-fit: contain;
+    }
+    .image-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .image-item {
+      width: 140px; /* adjust to taste */
+    }
+
+    .image-item img {
+      width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <h1>Project 5: Fun With Diffusion Models!</h1>
+  </div>
+
+  <div class="container text-center">
+    <h2>Part A: The Power of Diffusion Models!</h2>
+
+    <h3>Generating Images</h3>
+    Here are three prompts and their corresponding output images and captions.
+    For everything on this project, I am using the seed 1464.
+    I used the most inference steps on the two left images. Notably, the panda image, for which I used 100 inference steps, has a significant amount of texture in the fur and interesting lighting.
+    The pumpkin image, for which I used 40 inference steps, also has interesting lighting, though it seems less "realistic" than the panda image.
+    With 10 inference steps, the rightmost image looks hand-drawn.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p0_panda.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Prompt 1: two baby pandas glued to an easel made of bread (100 inference steps)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p0_pumpkin.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Prompt 2: a yellow pumpkin on top of a scarecrow with wings and three tails (40 inference steps) </p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p0_volcano.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Prompt 3: a white cat pointing at an erupting volcano with a stone hand while an alligator attacks the silhouette of a bird near the moon (10 inference steps)</p>
+      </div>
+    </div>
+
+    <h3>Forward Process, Classical Denoising, and One-Step Denoising</h3>
+    The forward process is defined by:
+    \[
+      q(x_t | x_0) = N \left(x_t; \sqrt{\bar \alpha}~ x_0, (1 - \bar \alpha_t)\mathbf{I}\right),
+    \]
+    which is equivalent to computing:
+    \[
+      x_t = \sqrt{\bar \alpha_t} ~ x_0 + \sqrt{1 - \bar \alpha_t} ~ \epsilon, \text{ where } \epsilon \sim \mathcal{N}.
+    \]
+    Here, \(\bar \alpha_t\) is a noice schedule parameter.
+
+    Here is the image of the Campanile, noised to three different t levels. Notice that a larger \(t\) corresponds to a greater noise level.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Image of the Campanile \((64 \times 64)\)</p>
+      </div>
+    </div>
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_250.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noise level at \(t = 250\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_500.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noise level at \(t = 500\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_750.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noise level at \(t = 750\)</p>
+      </div>
+    </div>
+
+    Here is the result of applying classical (Gaussian blur) denoising on the previous images. This simply applies a Gaussian blur. This is able to smooth out the image and make it more pleasant to look at, but will not recapture lost details.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_250_blur.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Classical Denoising, \(t = 250\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_500_blur.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Classical Denoising, \(t = 500\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_750_blur.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Classical Denoising, \(t = 750\)</p>
+      </div>
+    </div>
+
+    Using a pretrained diffusion model, I implemented one-step denoising by estimating the noise in the image and subtracting it from the noisy image to recover the original. I used the prompt embedding "a high quality photo".
+    These images are significantly more detailed than the classical method, but still lose many details, especially at the most noisy inputs.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_250_clean.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>One-Step Denoising, \(t = 250\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_500_clean.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>One-Step Denoising, \(t = 500\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp_750_clean.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>One-Step Denoising, \(t = 750\)</p>
+      </div>
+    </div>
+
+    <h3>Iterative Denoising</h3>
+
+    To implement iterative denoising, which denoises multiple times in a loop, I used strided timesteps, beginning at \(990\) and going backwards with stride \(30\).
+    At each timestep, I computed a slightly denoised version of the previous timestep's output. Here is the result of applying iterative denoising, as well as the intermediate steps.
+    Note that this method was able to recover the most details at the end.
+    
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p1_camp.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Original Campanile</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_90.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noisy Campanile at \(t = 90\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_240.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noisy Campanile at \(t = 240\)</p>
+      </div>
+    </div>
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_390.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noisy Campanile at \(t = 390\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_540.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noisy Campanile at \(t = 540\)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_690.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Noisy Campanile at \(t = 690\)</p>
+      </div>
+    </div>
+    
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_final.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Final Iteratively Denoised Campanile</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_onestep.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>One-Step Denoised Campanile</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p14_camp_blur.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Gaussian Blurred Campanile</p>
+      </div>
+    </div>
+
+    <h3>Diffusion Model Sampling and Classifier-Free Guidance</h3>
+
+    I sampled random noise from a Gaussian and sampled from the diffusion model, using the prompt "a high quality photo". Below are five samples:
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p15_1.png" class="img-thumbnail">
+        <p>Sample 1</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p15_2.png" class="img-thumbnail">
+        <p>Sample 2</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p15_3.png" class="img-thumbnail">
+        <p>Sample 3</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p15_4.png" class="img-thumbnail">
+        <p>Sample 4</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p15_5.png" class="img-thumbnail">
+        <p>Sample 5</p>
+      </div>
+    </div>
+
+    I then implemented CFG (Classifier-Free Guidance), which improves this method by computing both a conditional (based on the prompt) and an unconditional (based on a null prompt) image, then combining them with the formula:
+    \[
+      \epsilon = \epsilon_u + \gamma (\epsilon_c - \epsilon_u).
+    \]
+    Here, \(\gamma\) is called the scale factor, which I set to 0.7. Below are five samples using the same prompt.
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p16_1.png" class="img-thumbnail">
+        <p>CFG Sample 1</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p16_2.png" class="img-thumbnail">
+        <p>CFG Sample 2</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p16_3.png" class="img-thumbnail">
+        <p>CFG Sample 3</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p16_4.png" class="img-thumbnail">
+        <p>CFG Sample 4</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p16_5.png" class="img-thumbnail">
+        <p>CFG Sample 5</p>
+      </div>
+    </div>
+
+    <h3>Image-to-Image Translation</h3>
+
+    <h4>SDEdit Algorithm</h4>
+    I took a real image, added noise to it, then iteratively denoised it using CFG, using the same prompt as before.
+    Note that for higher values of i_start, corresponding to a shorter overall stride, the outputs resemble the true image more closely.
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_camp_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Campanile)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Campanile)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Campanile)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Campanile)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Campanile)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Campanile)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p1_camp.png" class="img-thumbnail">
+        <p>Original Image (Campanile)</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_sunset_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset.jpg" class="img-thumbnail">
+        <p>Original Image (Sunset)</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_friend_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend.jpg" class="img-thumbnail">
+        <p>Original Image (Orchestra)</p>
+      </div>
+    </div>
+
+    
+    <h4>Editing Hand-Drawn & Web Images</h4>
+
+    I did the same as before on one image from the web and two hand-drawn images. These resemble the original images a lot better.
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_okc_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (OK Computer)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_okc_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (OK Computer)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_okc_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (OK Computer)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_okc_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (OK Computer)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_okc_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (OK Computer)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_okc_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (OK Computer)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_okc.png" class="img-thumbnail">
+        <p>Original Image (OK Computer)</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_shark_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Shark)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_shark_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Shark)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_shark_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Shark)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_shark_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Shark)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_shark_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Shark)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_shark_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Shark)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_shark.png" class="img-thumbnail">
+        <p>Original Image (Shark)</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_house_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (House)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_house_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (House)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_house_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (House)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_house_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (House)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_house_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (House)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_house_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (House)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_house.png" class="img-thumbnail">
+        <p>Original Image (House)</p>
+      </div>
+    </div>
+
+    <h4>Inpainting</h4>
+
+    I implemented inpainting, where the model only generates within a masked region of the image. I implemented this very similarly to the iterative CFG algorithm, but at the end of each iteration, I applied the following update rule:
+    \[
+      x_t \leftarrow mx_t + (1-m)\mathrm{forward}(x_{orig}, t).
+    \]
+    This ensures that all generation occurrs within the masked region. At each timestep, the unmasked region is replaced with a less noisy version of the original image, which helps guide the generation.
+    Below are three examples of inpainting, using the prompt "a high quality image". Notice that the model was able to generate roughly believable outputs for the Campanile and Statue of Liberty, since the structures of a building or human head are very common, but for the tower of stuffed animals, the model had no idea what to do.
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p172_camp.png" class="img-thumbnail">
+        <p>Campanile</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_camp_mask.png" class="img-thumbnail">
+        <p>Mask</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_camp_window.png" class="img-thumbnail">
+        <p>Hole to Fill</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_camp_result.png" class="img-thumbnail">
+        <p>Campanile Inpainted</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p172_liberty.png" class="img-thumbnail">
+        <p>Statue of Liberty</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_liberty_mask.png" class="img-thumbnail">
+        <p>Mask</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_liberty_window.png" class="img-thumbnail">
+        <p>Hole to Fill</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_liberty_result.png" class="img-thumbnail">
+        <p>Statue of Liberty Inpainted</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p172_piggle.png" class="img-thumbnail">
+        <p>Stuffed Animals</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_piggle_mask.png" class="img-thumbnail">
+        <p>Mask</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_piggle_window.png" class="img-thumbnail">
+        <p>Hole to Fill</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p172_piggle_result.png" class="img-thumbnail">
+        <p>Stuffed Animals Inpainted</p>
+      </div>
+    </div>
+
+    <h4>Text-Conditional Image-to-Image Translation</h4>
+
+    I implemented text-conditional image-to-image translation by simply reusing the CFG algorithm from before, but prompting with a custom prompt instead of "a high quality prompt".
+    Below are three examples: the Campanile image with the prompt "a medieval castle besieged by massive stone monsters", the sunset image with the prompt "an interstellar nebula", and the orchestra image with the prompt "a yellow pumpkin on top of a scarecrow with wings and three tails".    "
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_camp_castle_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Campanile/Castle)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_castle_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Campanile/Castle)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_castle_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Campanile/Castle)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_castle_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Campanile/Castle)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_castle_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Campanile/Castle)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_camp_castle_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Campanile/Castle)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p1_camp.png" class="img-thumbnail">
+        <p>Original Image (Campanile/Castle)</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_sunset_nebula_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_nebula_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_nebula_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_nebula_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_nebula_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset_nebula_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Sunset)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_sunset.jpg" class="img-thumbnail">
+        <p>Original Image (Sunset)</p>
+      </div>
+    </div>
+
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p17_friend_pumpkin_1.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=1\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_pumpkin_3.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=3\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_pumpkin_5.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=5\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_pumpkin_7.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=7\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_pumpkin_10.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=10\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend_pumpkin_20.png" class="img-thumbnail">
+        <p>SDEdit with \(i_{start}=20\) (Orchestra)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p17_friend.jpg" class="img-thumbnail">
+        <p>Original Image (Orchestra)</p>
+      </div>
+    </div>
+
+    
+    <h3>Visual Anagrams</h3>
+
+    I obtained visual anagrams by editing my iterative CFG code to take in two input prompt embeddings. The overall process is done the same, but instead of computing a single CFG noise estimate \(\epsilon\), I computed two: one for the right-side-up image (image 1) and one for the upside down (image 2). Specifically, I computed:
+    \begin{align*}
+      \epsilon_1 &= \text{ CFG of UNet}(x_t, t, p_1), \\
+      \epsilon_2 &= \text{ \(\mathrm{flip}(\)CFG of UNet}(\mathrm{flip}(x_t), t, p_2)), \\
+      \implies \epsilon &= (\epsilon_1 + \epsilon_2) / 2.
+    \end{align*}
+    Below are two examples of visual anagrams.
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p18_skull_bouquet.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Visual Anagram 1 (A skull, a bouquet of flowers)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p18_deer_truck.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Visual Anagram 2 (An oil painting of a deer, an oil painting of a truck)</p>
+      </div>
+    </div>
+    
+    <h3>Hybrid Images</h3>
+
+    In a similar way, I obtained hybrid images using two input prompts. This time, I computed the CFG noise estimates for both prompts normally, then combined them using low and high-pass Gaussian filters. This way, the first prompt encodes the low frequency information (global shapes) in the final output, while the second prompt encodes the high frequency information (details, textures).
+    \begin{align*}
+      \epsilon_1 &= \text{ CFG of UNet}(x_t, t, p_1), \\
+      \epsilon_2 &= \text{ CFG of UNet}(x_t, t, p_2), \\
+      \implies \epsilon &= f_\ell(\epsilon_1) + f_h(\epsilon_2).
+    \end{align*}
+    Below are two examples of hybrid images.
+
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p19_cat.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Hybrid Image 1 (A black cat, a mustache)</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p19_mountain.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Hybrid Image 2 (A mountain landscape, a brick wall)</p>
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="container text-center">
+    <h2>Part B.1: Training a Single-Step Denoising UNet</h2>
+
+    First, I trained an unconditional single-step denoising UNet in PyTorch, using the model structure provided in the specifications.
+    This UNet was trained on the MNIST dataset by applying Gaussian noise (with \(sigma = 0.5\)) to training images and computing a MSE loss between the output and the clean image.
+  
+
+    <h3>Noising</h3>
+    I added Gaussian noise to the image by randomly sampling \(\epsilon\) from a standard multivariate normal, then scaling by a noise level \sigma:
+    \[
+    x_{noisy} = x_{clean} + \sigma \cdot \epsilon.
+    \]
+    Here's a visualization of the noising process for various \(\sigma\) values on the Campanile photo.
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p2_camp_00.png" class="img-thumbnail">
+        <p>\(\sigma = 0.0\) (Original)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_camp_02.png" class="img-thumbnail">
+        <p>\(\sigma = 0.2\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_camp_04.png" class="img-thumbnail">
+        <p>\(\sigma = 0.4\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_camp_05.png" class="img-thumbnail">
+        <p>\(\sigma = 0.5\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_camp_06.png" class="img-thumbnail">
+        <p>\(\sigma = 0.6\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_camp_08.png" class="img-thumbnail">
+        <p>\(\sigma = 0.8\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_camp_10.png" class="img-thumbnail">
+        <p>\(\sigma = 1.0\)</p>
+      </div>
+    </div>
+
+    <h3>Training</h3>
+
+    I trained the Denoising UNet model using \(\sigma = 0.5\)-noised images for \(5\) epochs, using a batch size of 256 and an Adam optimizer with learning rate 1e-4.
+    Here's the training loss plotted over epochs,
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_train.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Training Loss for Unconditioned UNet</p>
+      </div>
+    </div>
+
+    For three example test images, here are the clean and noisy images, as well as the reconstructions after the first and fifth epochs.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_samp_1.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Reconstructions after \(1\) epoch</p>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_samp_5.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Reconstructions after \(5\) epochs</p>
+      </div>
+    </div>
+
+    <h3>Out-of-Distribution Testing</h3>
+    Since the model was only trained on images noised with \(\sigma = 0.5\), I checked how well the model generalized by denoising test images with different noise levels.
+    For the first test image, here are the outputs of the denoiser when noised to varying levels of \(\sigma\).
+    Notice that the model performs well up until about \(\sigma = 0.8\), and became nearly unrecognizable by \(\sigma = 1.0\).
+    <div class="image-grid text-center">
+      <div class="image-item">
+        <img src="images/p2_sigma_00.png" class="img-thumbnail">
+        <p>\(\sigma = 0.0\) (No blurring)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_sigma_02.png" class="img-thumbnail">
+        <p>\(\sigma = 0.2\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_sigma_04.png" class="img-thumbnail">
+        <p>\(\sigma = 0.4\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_sigma_05.png" class="img-thumbnail">
+        <p>\(\sigma = 0.5\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_sigma_06.png" class="img-thumbnail">
+        <p>\(\sigma = 0.6\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_sigma_08.png" class="img-thumbnail">
+        <p>\(\sigma = 0.8\)</p>
+      </div>
+      <div class="image-item">
+        <img src="images/p2_sigma_10.png" class="img-thumbnail">
+        <p>\(\sigma = 1.0\)</p>
+      </div>
+    </div>
+
+    <h3>Denoising Pure Noise</h3>
+
+    In order to approximate a generative model, I trained the unconditional UNet on pure Gaussian noise, using the same structure and hyperparameters as the previous model.
+    In this case, at every training step, I fed pure noise into the model and used MSE loss against the clean image.
+    Here's the training loss over \(5\) epochs.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_pure_train.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Training Loss for Unconditioned UNet</p>
+      </div>
+    </div>
+
+    Below are ten images sampled by inputting pure Gaussian noise into the model, after the first and fifth epochs.
+    Notice that the model learns to predict the mean of the dataset, which results in a vague digit-like blob in the center of the image,
+    because during training it was never provided any information pertaining to the specific classes. Additionally, all of the samples look
+    practically the same.    
+    <img src="images/p2_pure_1.png">
+    <img src="images/p2_pure_5.png">
+
+  </div>
+  
+  <div class="container text-center">
+    <h2>Part B.2: Training a Flow Matching Model</h2>
+
+    In order to turn the UNet into a functioning generative model, I added time and class conditioning.
+
+    <h3>Adding Time Conditioning</h3>
+    
+    I modified the unconditioned UNet to accept a time parameter \(t\), which was injected into the model using two fully connected layers at two points in the upsampling process, immediately before concatenation.
+    After this change, the UNet predicts the flow (instead of the denoised image), given by:
+    \[
+      \mathrm{flow} = x_{clean} - x_{interp},
+    \]
+    where \(x_{interp}\) is the linear-interpolated noisy image at time \(t\), given by:
+    \[
+      x_{interp} = tx + (1-t)\epsilon.
+    \]
+    The training objective becomes to minimize the MSE error between the UNet flow prediction and the true flow.
+    Here's the training loss over \(10\) epochs. There's a little jump in the loss in the middle, but otherwise the model trains quite well.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_time_train.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Training Loss for Time-Conditioned UNet</p>
+      </div>
+    </div>
+
+    In order to actually sample from this UNet, I used the iterative denoise algorithm. I began by sampling \(x_t\) from pure noise (the standard Gaussian normal). For timesteps from \(0\) to \(1\) of size \(\frac{1}{T}\), I updated \(x_t\) using the following recursion:
+    \[
+      x_t \leftarrow x_t + \frac{1}{T} u_\Theta(x_t, t).
+    \]
+    Below are results from sampling the UNet after 1 epoch, 5 epochs, and 10 epochs. I sampled forty times. Although the results don't really look like digits,
+    they are more distinct than the results for the unconditioned UNet.
+    <img src="images/p2_time_1.png">
+    <img src="images/p2_time_5.png">
+    <img src="images/p2_time_10.png">
+
+    <h3>Adding Class Conditioning</h3>
+
+    In order to actually specify which digit I would like generated, I added class conditioning.
+    The class, a digit from 0 to 9, is provided as a ten-dimensional one-hot vector and injected into the upsampling portion of the UNet using another two fully connected layers. This time, I multipied the upsampled tensor by the class embedding, then added the time embedding.
+    During training, I implemented dropout by setting the class condition to zero with probability \(0.1\).
+    This allowed me to use both conditioned and unconditioned sampling during the sampling process.
+    I first trained with a learning rate scheduler.
+    Here's the training loss over \(10\) epochs.
+    <div class="row justify-content-center text-center" style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <div class="col-xs-12 col-sm-6 col-md-4">
+        <img src="images/p2_class_train.png" class="img-responsive img-thumbnail grid-image-wide">
+        <p>Training Loss for Time-Conditioned UNet</p>
+      </div>
+    </div>
+
+    In order to sample, I edited my iterative denoise algorithm to include both conditional sampling (inputting the desired class) and unconditional sampling (zeroing out the class). I combined these predicted flows using the formula:
+    \[
+      u = u_{uncond} + \gamma (u_{cond} - u_{uncond}).
+    \]
+    Here, \(\gamma\), the guidance scale factor, was set to \(5.0\). I then updated \(x_t\) using the same rule as before.
+    Below are results from sampling the UNet after 1 epoch, 5 epochs, and 10 epochs. I sampled forty times, four times for each class.
+    Notice that the numbers are actually legible this time.
+    <img src="images/p2_class_1.png">
+    <img src="images/p2_class_5.png">
+    <img src="images/p2_class_10.png">
+
+    <h3>Removing the Learning Rate Scheduler</h3>
+
+    Finally, I removed the learning rate scheduler used for training the class-conditioned UNet in order to see if a constant learning rate could result in similar performance.
+    I used a smaller learning rate of 1e-4 instead of 1e-2 in order to prevent the model from overshooting during training. The results were comparable.
+    Again, the samples are shown below.
+    <img src="images/p2_class_ns_1.png">
+    <img src="images/p2_class_ns_5.png">
+    <img src="images/p2_class_ns_10.png">
+
+
+
+<footer class="text-center" style="margin-top: 50px; padding: 20px; background: #eee;">
+  <small>Arijit Ghoshal - Project 3</small>
+</footer>
+</html>
